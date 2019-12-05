@@ -1,9 +1,6 @@
 package chapter6;
 
 public interface Command {
-	void executeAdd(Day pDay, Show pShow);
-	void executeRemove(Day pDay);
-	void executeClear();
+	void execute();
 	void undo();
-	void redo();
 }
