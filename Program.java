@@ -7,16 +7,10 @@ import java.util.Stack;
 
 import javafx.util.Pair;
 
-/**
- * Class responsible for managing a program that consists
- * of various shows presented on different days of one week.
- * Each day of the week must be associated with exactly one
- * Show object. If there is not show on a given day, a special 
- * object of type show is used to represent a "non-show".
- */
 public class Program
 {
 	private final EnumMap<Day, Show> aShows = new EnumMap<>(Day.class);
+	
 	
 	private static Show nullShow = new Show() {
 
@@ -63,12 +57,11 @@ public class Program
 	 * @param pShow The show to add.
 	 * @param pDay The day when the show takes place.
 	 */
-	public void add(Show pShow, Day pDay)
+	private void add(Day pDay, Show pShow)
 	{
 		assert pShow != null && pDay != null;
 		aShows.put(pDay, pShow);
 	}
-	
 	
 	/**
 	 * Removes a show from the program.
@@ -105,100 +98,59 @@ public class Program
 		return result.toString();
 	}
 	
-	public Command createAddCommand() {
+	public Command addCommand(Day pDay, Show pShow) {
 		return new Command() {
-			private Stack<Day> aDaysStack = new Stack<>();
-			private Stack<Pair<Day, Show>> aUndosStack = new Stack<>();
-			@Override
-			public void executeAdd(Day pDay, Show pShow) {
-				add(pShow, pDay);
-				aDaysStack.push(pDay);
-			}
-
-			@Override
-			public void executeRemove(Day pDay) {}
-
-			@Override
-			public void executeClear() {}
-
-			@Override
-			public void undo() {
-				assert !aDaysStack.isEmpty();
-				aUndosStack.add(new Pair<Day, Show>(aDaysStack.peek(), aShows.get(aDaysStack.peek())));
-				remove(aDaysStack.pop());
-			}
-
-			@Override
-			public void redo() {
-				assert !aUndosStack.isEmpty();
-				Pair<Day, Show> temp = aUndosStack.pop();
-				executeAdd(temp.getKey(), temp.getValue());
-			}
-		};
-	}
-	
-	public Command createRemoveCommand() {
-		return new Command() {
-			private Stack<Day> aDaysStack = new Stack<>();
-			private Stack<Show> aShowsStack =new Stack<>();
-			private Stack<Day> aUndosStack = new Stack<>();
-			@Override
-			public void executeRemove(Day pDay) {
-				assert pDay!=null;
-				aDaysStack.push(pDay);
-				aShowsStack.push(aShows.get(pDay));
-				remove(pDay);
-			}
-
-			@Override
-			public void executeAdd(Day pDay, Show pShow) {}
-
-			@Override
-			public void executeClear() {}
-
-			@Override
-			public void undo() {
-				assert !aShowsStack.isEmpty() && !aDaysStack.isEmpty();
-				aUndosStack.add(aDaysStack.peek());
-				add(aShowsStack.pop(), aDaysStack.pop());
-			}
-
-			@Override
-			public void redo() {
-				assert !aUndosStack.isEmpty();
-				executeRemove(aUndosStack.pop());
-			}
-		};
-	}
-	
-	public Command createClearCommand() {
-		return new Command() {
-			private Stack<EnumMap<Day, Show>> aMapsStack = new Stack<>();
+			private Day aDay = pDay;
+			private Show aShow = pShow;
 			
 			@Override
-			public void executeClear() {
-				aMapsStack.add(aShows.clone());
-				clear();
+			public void execute() {
+				add(aDay, aShow);
 			}
-
-			@Override
-			public void executeAdd(Day pDay, Show pShow) {}
-
-			@Override
-			public void executeRemove(Day pDay) {}
 
 			@Override
 			public void undo() {
-				assert !aMapsStack.isEmpty();
-				EnumMap<Day, Show> temp = aMapsStack.pop();
-				for (Day day: temp.keySet()) {
-					aShows.put(day, temp.get(day));
-				}
+				remove(aDay);
+			}
+			
+		};
+	}
+	
+	public Command removeCommand(Day pDay) {
+		return new Command() {
+			private Day aDay = pDay;
+			private Show aShow;
+			
+			@Override
+			public void execute() {
+				aShow = aShows.get(aDay);
+				remove(aDay);
 			}
 
 			@Override
-			public void redo() {
-				executeClear();
+			public void undo() {
+				assert aShow!=null;
+				add(aDay, aShow);
+			}		
+			
+		};
+	}
+	
+	public Command clearCommand() {
+		return new Command() {
+			private EnumMap<Day, Show> aShowsCopy = new EnumMap<>(Day.class);
+			
+			@Override
+			public void execute() {
+				aShowsCopy.putAll(aShows);
+				clear();	
+			}
+
+			@Override
+			public void undo() {
+				for (Day day: Day.values()) {
+					aShows.put(day, aShowsCopy.get(day));
+				}
 			}
 		};
 	}
