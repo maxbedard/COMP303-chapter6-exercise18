@@ -2,49 +2,28 @@ package chapter6;
 
 import java.util.Stack;
 
-public class CommandProcessor implements Command {
-	private Stack<Command> aCommands = new Stack<>();
-	private Stack<Command> aUndos = new Stack<>();
-	private Program aProgram;
-	private Command addCommand;
-	private Command removeCommand;
-	private Command clearCommand;
+public class CommandProcessor {
+	private final Stack<Command> aCommands = new Stack<>();
+	private final Stack<Command> undones = new Stack<>();
 	
-	public CommandProcessor(Program pProgram){
-		assert aProgram !=null;
-		aProgram = pProgram;
-		addCommand = aProgram.createAddCommand();
-		removeCommand = aProgram.createRemoveCommand();
-		clearCommand = aProgram.createClearCommand();
-	}
-	
-	public void executeAdd(Day pDay, Show pShow) {
-		assert pDay!=null && pShow!=null;
-		addCommand.executeAdd(pDay, pShow);
-		aCommands.add(addCommand);
-	}
-	
-	public void executeRemove(Day pDay) {
-		assert pDay!=null;
-		removeCommand.executeRemove(pDay);
-		aCommands.add(removeCommand);
-	}
-	
-	public void executeClear() {
-		clearCommand.executeClear();
-		aCommands.add(clearCommand);
+	public void execute(Command pCommand) {
+		pCommand.execute();
+		aCommands.push(pCommand);
 	}
 	
 	public void undo() {
 		assert !aCommands.isEmpty();
-		aUndos.push(aCommands.peek());
-		aCommands.pop().undo();
+		Command lastExecuted = aCommands.pop();
+		lastExecuted.undo();
+		undones.push(lastExecuted);
 	}
-
-	@Override
+	
+	
 	public void redo() {
-		assert !aUndos.isEmpty();
-		aUndos.pop().redo();	
+		assert !undones.isEmpty();
+		Command lastUndo = undones.pop();
+		lastUndo.execute();
+		aCommands.push(lastUndo);
 	}
 	
 }
